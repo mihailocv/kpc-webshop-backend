@@ -22,12 +22,15 @@ export class AdService {
   }
 
   findAll() {
-    return this.adModel.find().populate('user', 'username').exec();
+    return this.adModel.find().populate('user', 'username phoneNumber').exec();
   }
 
   // Očekuje string, što je ispravno
   findOne(id: string) {
-    return this.adModel.findById(id).populate('user', 'username').exec();
+    return this.adModel
+      .findById(id)
+      .populate('user', 'username phoneNumber')
+      .exec();
   }
 
   // Proveri da update metoda takođe prima string
