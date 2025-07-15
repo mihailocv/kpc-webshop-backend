@@ -1,31 +1,32 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { User } from '../users/entities/user.entity';
-import { Model } from 'mongoose';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import { SignUpDto } from './dto/signup.dto';
 import { LogInDto } from './dto/login.dto';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
+    private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
 
   async signUp(signUpDto: SignUpDto) {
-    const { username, password, phoneNumber } = signUpDto;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.userModel.create({
-      username,
-      password: hashedPassword,
-      phoneNumber,
-    });
-
-    await user.save();
+    const { username } = signUpDto;
+    const existingUser = await this.usersService.findByUsername(username);
+    if (existingUser) {
+      throw new ConflictException(
+        'Korisnik sa tim korisničkim imenom već postoji.',
+      );
+    }
+    const user = await this.usersService.create(signUpDto);
 
     const token = this.jwtService.sign(
       { id: user.id },
@@ -34,24 +35,21 @@ export class AuthService {
         expiresIn: this.configService.get('JWT_EXPIRES'),
       },
     );
-
     return { token };
   }
 
   async login(loginDto: LogInDto) {
     const { username, password } = loginDto;
-    const user = await this.userModel.findOne({
-      username,
-    });
+    const user = await this.usersService.findByUsername(username);
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('Pogrešno korisničko ime ili lozinka.');
+    }
 
-    if (!user) throw new UnauthorizedException('invalid username or password');
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch)
-      throw new UnauthorizedException('invalid email or password');
     const token = this.jwtService.sign(
       { id: user.id },
       {
         secret: this.configService.get('JWT_SECRET'),
+        expiresIn: this.configService.get('JWT_EXPIRES'),
       },
     );
     return { token };
