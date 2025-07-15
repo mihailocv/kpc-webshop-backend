@@ -36,10 +36,20 @@ export class UsersService {
     return user;
   }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
-    return this.userModel
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    const updatedUser = await this.userModel
       .findByIdAndUpdate(id, updateUserDto, { new: true })
       .exec();
+
+    if (!updatedUser) {
+      throw new NotFoundException(`Korisnik sa ID-jem ${id} nije pronađen`);
+    }
+
+    return updatedUser;
   }
 
   remove(id: string) {
