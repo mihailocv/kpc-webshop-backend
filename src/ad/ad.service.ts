@@ -29,16 +29,12 @@ export class AdService {
     return this.adModel.find().populate('user', 'username phoneNumber').exec();
   }
 
-  // Očekuje string, što je ispravno
   findOne(id: string) {
     return this.adModel
       .findById(id)
       .populate('user', 'username phoneNumber')
       .exec();
   }
-
-  // Proveri da update metoda takođe prima string
-  // src/ad/ad.service.ts
 
   async update(
     id: string,
@@ -58,21 +54,27 @@ export class AdService {
 
     if (file) {
       updateAdDto.imageUrl = `http://localhost:3000/uploads/${file.filename}`;
+    } else {
+      delete updateAdDto.imageUrl;
     }
 
     if (updateAdDto.price) {
-      // @ts-ignore
       updateAdDto.price = Number(updateAdDto.price);
     }
 
-    // Koristimo Object.assign da ažuriramo postojeća polja
-    Object.assign(existingAd, updateAdDto);
+    const updatedAd = await this.adModel
+      .findByIdAndUpdate(id, updateAdDto, { new: true })
+      .exec();
 
-    // Čuvamo izmjene i vraćamo sačuvani dokument
-    return existingAd.save();
+    if (!updatedAd) {
+      throw new NotFoundException(
+        `Oglas sa ID-jem "${id}" nije mogao biti ažuriran.`,
+      );
+    }
+
+    return updatedAd;
   }
 
-  // Proveri da remove metoda takođe prima string
   remove(id: string) {
     return this.adModel.findByIdAndDelete(id);
   }

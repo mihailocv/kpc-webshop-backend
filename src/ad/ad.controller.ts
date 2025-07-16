@@ -1,4 +1,3 @@
-// src/ad/ad.controller.ts
 import {
   Controller,
   Post,
@@ -23,7 +22,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { UpdateAdDto } from './dto/update-ad.dto';
 
-@Controller('ads') // URL će biti /ads
+@Controller('ads')
 export class AdController {
   constructor(private readonly adService: AdService) {}
 
@@ -31,7 +30,6 @@ export class AdController {
   @UseGuards(AuthGuard('jwt'))
   @UseInterceptors(
     FileInterceptor('image', {
-      // polje u formi se zove 'image'
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {
@@ -44,7 +42,6 @@ export class AdController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.mimetype.match(/^image\/(jpeg|png|gif)$/)) {
-          // Ako fajl NIJE odgovarajućeg tipa, odbaci ga sa greškom
           return cb(
             new BadRequestException(
               'Dozvoljeni formati slike su JPG, PNG i GIF.',
@@ -52,7 +49,6 @@ export class AdController {
             false,
           );
         }
-        // Ako je sve u redu, prihvati fajl
         cb(null, true);
       },
     }),
@@ -61,9 +57,7 @@ export class AdController {
     @Body() createAdDto: CreateAdDto,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }), // 5MB
-        ],
+        validators: [new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 })],
       }),
     )
     image: Express.Multer.File,
@@ -77,7 +71,6 @@ export class AdController {
     );
     const user = req.user;
 
-    // VAŽNO: U produkciji, ovde treba da bude pravi domen aplikacije
     const imageUrl = `http://localhost:3000/uploads/${image.filename}`;
 
     return this.adService.create(createAdDto, user, imageUrl);
@@ -90,28 +83,38 @@ export class AdController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    // Ova linija je ispravna, id je string
     return this.adService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
-  @UseInterceptors(FileInterceptor('image')) // <-- KLJUČNA IZMJENA: Omogućava prijem datoteke
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, callback) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          const filename = `${uniqueSuffix}${ext}`;
+          callback(null, filename);
+        },
+      }),
+    }),
+  )
   update(
     @Param('id') id: string,
     @Body() updateAdDto: UpdateAdDto,
-    @UploadedFile() file: Express.Multer.File, // <-- KLJUČNA IZMJENA: Preuzima datoteku
-    @Request() req, // <-- Treba nam da dobijemo ID korisnika
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
   ) {
-    // Provjeravamo da li je korisnik koji mijenja oglas ujedno i vlasnik oglasa
     const userId = req.user.id;
-    return this.adService.update(id, updateAdDto, userId, file); // Prosleđujemo sve servisu
+    return this.adService.update(id, updateAdDto, userId, file);
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard('jwt')) // Dodaj zaštitu i na delete
+  @UseGuards(AuthGuard('jwt'))
   remove(@Param('id') id: string) {
-    // Prosleđujemo 'id' kao string, bez '+'
     return this.adService.remove(id);
   }
 }

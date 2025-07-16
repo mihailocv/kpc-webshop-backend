@@ -1,4 +1,3 @@
-// src/auth/jwt.strategy.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
@@ -12,18 +11,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private usersService: UsersService,
     private configService: ConfigService,
   ) {
-    // Prvo dohvatimo JWT_SECRET
     const jwtSecret = configService.get<string>('JWT_SECRET');
 
-    // Proverimo da li tajni ključ uopšte postoji u konfiguraciji
     if (!jwtSecret) {
       throw new Error('JWT_SECRET nije definisan u .env fajlu!');
     }
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false, // Preporučeno je da se ostavi na false
-      secretOrKey: jwtSecret, // Sada smo sigurni da jwtSecret nije undefined
+      ignoreExpiration: false,
+      secretOrKey: jwtSecret,
     });
   }
 
