@@ -19,8 +19,8 @@ import { CreateAdDto } from './dto/create-ad.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { UpdateAdDto } from './dto/update-ad.dto';
+import { generateFilename } from '../utils';
 
 @Controller('ads')
 export class AdController {
@@ -33,11 +33,7 @@ export class AdController {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {
-          const randomName = Array(32)
-            .fill(null)
-            .map(() => Math.round(Math.random() * 16).toString(16))
-            .join('');
-          return cb(null, `${randomName}${extname(file.originalname)}`);
+          return cb(null, generateFilename(file));
         },
       }),
       fileFilter: (req, file, cb) => {
@@ -63,12 +59,6 @@ export class AdController {
     image: Express.Multer.File,
     @Request() req,
   ) {
-    console.log(
-      'Primljeni DTO:',
-      createAdDto,
-      'Tip cene:',
-      typeof createAdDto.price,
-    );
     const user = req.user;
 
     const imageUrl = `http://localhost:3000/uploads/${image.filename}`;
@@ -93,10 +83,7 @@ export class AdController {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          const filename = `${uniqueSuffix}${ext}`;
+          const filename = generateFilename(file);
           callback(null, filename);
         },
       }),
