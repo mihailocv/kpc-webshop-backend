@@ -16,7 +16,7 @@ async function bootstrap() {
       transform: true, // Automatski transformiše payload u DTO instance
       transformOptions: {
         enableImplicitConversion: true,
-      }
+      },
     }),
   );
 

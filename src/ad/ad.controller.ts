@@ -95,10 +95,17 @@ export class AdController {
   }
 
   @Patch(':id')
-  @UseGuards(AuthGuard('jwt')) // Dodaj zaštitu i na update
-  update(@Param('id') id: string, @Body() updateAdDto: UpdateAdDto) {
-    // Prosleđujemo 'id' kao string, bez '+'
-    return this.adService.update(id, updateAdDto);
+  @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(FileInterceptor('image')) // <-- KLJUČNA IZMJENA: Omogućava prijem datoteke
+  update(
+    @Param('id') id: string,
+    @Body() updateAdDto: UpdateAdDto,
+    @UploadedFile() file: Express.Multer.File, // <-- KLJUČNA IZMJENA: Preuzima datoteku
+    @Request() req, // <-- Treba nam da dobijemo ID korisnika
+  ) {
+    // Provjeravamo da li je korisnik koji mijenja oglas ujedno i vlasnik oglasa
+    const userId = req.user.id;
+    return this.adService.update(id, updateAdDto, userId, file); // Prosleđujemo sve servisu
   }
 
   @Delete(':id')

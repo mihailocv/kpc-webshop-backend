@@ -7,6 +7,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { AdCategory } from '../enum/ad-category.enum';
+import { Type } from 'class-transformer';
 
 export class CreateAdDto {
   @IsString({ message: 'Naziv oglasa mora biti tekst.' })
@@ -21,6 +22,7 @@ export class CreateAdDto {
   @IsNumber({}, { message: 'Cena mora biti broj.' })
   @IsPositive({ message: 'Cena mora biti pozitivan broj.' })
   @IsNotEmpty({ message: 'Cena ne sme biti prazna.' })
+  @Type(() => Number)
   price: number;
 
   @IsEnum(AdCategory, { message: 'Izaberite validnu kategoriju.' })

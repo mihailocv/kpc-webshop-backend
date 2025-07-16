@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { CreateAdDto } from './dto/create-ad.dto';
 import { UpdateAdDto } from './dto/update-ad.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -34,8 +38,38 @@ export class AdService {
   }
 
   // Proveri da update metoda takođe prima string
-  update(id: string, updateAdDto: UpdateAdDto) {
-    return this.adModel.findByIdAndUpdate(id, updateAdDto, { new: true });
+  // src/ad/ad.service.ts
+
+  async update(
+    id: string,
+    updateAdDto: UpdateAdDto,
+    userId: string,
+    file?: Express.Multer.File,
+  ): Promise<Ad> {
+    const existingAd = await this.adModel.findById(id).exec();
+
+    if (!existingAd) {
+      throw new NotFoundException(`Oglas sa ID-jem "${id}" nije pronađen.`);
+    }
+
+    if (existingAd.user.toString() !== userId) {
+      throw new ForbiddenException('Nemate dozvolu da mijenjate ovaj oglas.');
+    }
+
+    if (file) {
+      updateAdDto.imageUrl = `http://localhost:3000/uploads/${file.filename}`;
+    }
+
+    if (updateAdDto.price) {
+      // @ts-ignore
+      updateAdDto.price = Number(updateAdDto.price);
+    }
+
+    // Koristimo Object.assign da ažuriramo postojeća polja
+    Object.assign(existingAd, updateAdDto);
+
+    // Čuvamo izmjene i vraćamo sačuvani dokument
+    return existingAd.save();
   }
 
   // Proveri da remove metoda takođe prima string
