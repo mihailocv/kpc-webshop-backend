@@ -47,7 +47,7 @@ Aplikacija je strukturirana modularno, što omogućava laku nadogradnju i održa
 
 1.  **Klonirajte repozitorijum:**
     ```bash
-    git clone [https://github.com/mihailocv/kpc-webshop-backend.git](https://github.com/mihailocv/kpc-webshop-backend.git)
+    git clone https://github.com/mihailocv/kpc-webshop-backend.git
     cd kpc-webshop-backend
     ```
 
